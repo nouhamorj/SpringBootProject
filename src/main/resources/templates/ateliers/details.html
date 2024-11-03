@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <title>Détails de l'Atelier</title>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+          integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+          integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
+  <script src="https://kit.fontawesome.com/d4101d2a3b.js" crossorigin="anonymous"></script>
+
+  <style>
+    .section-title {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      padding: 10px 15px;
+    }
+
+    .section-title i {
+      margin-left: auto;
+      font-size: 1.2em;
+    }
+
+    .accordion-item {
+      border: none;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 10px;
+    }
+
+    .accordion-button {
+      padding: 0;
+      border: none;
+      box-shadow: none;
+    }
+
+    .accordion-button:not(.collapsed) {
+      color: #007bff;
+    }
+
+    .accordion-body {
+      display: flex;
+      align-items: center;
+      padding: 10px 15px;
+    }
+
+    .info-item {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+
+    .info-item i {
+      color: #007bff;
+      margin-right: 10px;
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div th:replace="~{header :: header}"></div>
+
+<div class="container mt-5">
+
+  <div class="header-container">
+    <h1 th:text="${atelier.titre}" class="display-8"></h1>
+    <a th:href="@{/ateliers/liste}" class="btn btn-secondary">Retour à la Liste des Ateliers</a>
+  </div>
+
+  <div class="accordion" id="atelierAccordion">
+    <div class="accordion-item">
+      <h2 class="section-title" data-bs-toggle="collapse" data-bs-target="#atelierDetails" aria-expanded="true" aria-controls="atelierDetails">
+        Détails de l'Atelier
+        <i class="fas fa-plus-circle"></i>
+      </h2>
+      <div id="atelierDetails" class="accordion-collapse collapse show">
+        <div class="accordion-body">
+          <p th:text="${atelier.description}" class="lead"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="section-title" data-bs-toggle="collapse" data-bs-target="#themesDetails" aria-expanded="false" aria-controls="themesDetails">
+        Thèmes
+        <i class="fas fa-plus-circle"></i>
+      </h2>
+      <div id="themesDetails" class="accordion-collapse collapse">
+        <div class="accordion-body">
+          <ul class="list-group">
+            <li class="list-group-item" th:each="theme : ${atelier.themes}">
+              <i class="fa-solid fa-plus toggle-icon"></i>
+              <span th:text="${theme.nom}"></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="section-title" data-bs-toggle="collapse" data-bs-target="#formationsDetails" aria-expanded="false" aria-controls="formationsDetails">
+        Formations Associées
+        <i class="fas fa-plus-circle"></i>
+      </h2>
+      <div id="formationsDetails" class="accordion-collapse collapse">
+        <div class="accordion-body">
+          <ul class="list-group">
+            <li class="list-group-item" th:each="formation : ${atelier.formations}">
+              <i class="fas fa-book"></i>
+              <span th:text="${formation.libelle}"></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="accordion-item">
+      <h2 class="section-title" data-bs-toggle="collapse" data-bs-target="#formateurDetails" aria-expanded="false" aria-controls="formateurDetails">
+        Informations sur le Formateur
+        <i class="fas fa-plus-circle"></i>
+      </h2>
+      <div id="formateurDetails" class="accordion-collapse collapse">
+        <div class="accordion-body">
+          <div class="info-item">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>Formateur: <span th:text="${atelier.formateur.nom} + ' ' + ${atelier.formateur.prenom}"></span></span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-envelope"></i>
+            <span th:text="${atelier.formateur.email}"></span>
+          </div>
+          <div class="info-item">
+            <i class="fas fa-phone"></i>
+            <span th:text="${atelier.formateur.telephone}"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-4 text-end">
+    <a th:href="@{/ateliers/modifier(id=${atelier.id})}" class="btn btn-warning">Modifier l'Atelier</a>
+    <a th:href="@{/ateliers/supprimer(id=${atelier.id})}" class="btn btn-danger">Supprimer l'Atelier</a>
+  </div>
+</div>
+
+</body>
+</html>

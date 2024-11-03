@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Liste des Ateliers</title>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <script src="https://kit.fontawesome.com/d4101d2a3b.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div th:replace="header :: header"></div>
+
+<div class="container mt-5" style="max-width: 2200px; width: 90%;">
+  <div class="mb-4">
+    <h1 style="color: blue">Liste des Ateliers</h1>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <form th:action="@{/ateliers/liste}" method="get" class="d-flex" style="width: 500px;">
+      <div class="input-group">
+        <input type="text" name="mc" class="form-control" placeholder="Rechercher par titre" />
+        <button type="submit" style="background: blue; color: white" class="btn">Rechercher</button>
+      </div>
+    </form>
+    <a th:href="@{/ateliers/ajouter}" class="btn" style="background: orangered; color:white" >Ajouter un nouvel atelier</a>
+  </div>
+
+  <!-- Table des ateliers -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover">
+      <thead>
+      <tr>
+        <th style="color:orangered">Titre</th>
+        <th style="width:45%; color: orangered">Description</th>
+        <th style="color:orangered">Thème</th>
+        <th style="color:orangered">Animateur</th>
+        <th style="color:orangered">Actions</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr th:each="atelier : ${ateliers}">
+        <td th:text="${atelier.titre}"></td>
+        <td th:text="${atelier.description}"></td>
+        <td>
+          <ul class="list">
+            <li th:each="theme : ${atelier.themes}">
+              <span th:text="${theme.nom}"></span>
+            </li>
+          </ul>
+        </td>
+        <td th:text="${atelier.formateur.prenom}+' '+${atelier.formateur.nom}"></td>
+        <td>
+          <a th:href="@{/ateliers/{id}(id=${atelier.id})}" class="btn  btn-sm"><i style="color:blue" class="far fa-eye"></i></a>
+          <a th:href="@{/ateliers/delete/{id}(id=${atelier.id})}" class="btn btn-sm" onclick="return confirm('Confirmer la suppression ?')"><i style="color:orangered" class="fas fa-trash"></i></a>
+          <a th:href="@{/ateliers/modifier/{id}(id=${atelier.id})}" class="btn  btn-sm"><i style="color:blue" class="far fa-edit"></i></a>
+
+        </td>
+      </tr>
+      <tr th:if="${#lists.isEmpty(ateliers)}">
+        <td colspan="5" class="text-center">Aucun atelier trouvé.</td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="d-flex justify-content-end mt-3">
+    <ul class="pagination">
+      <li class="page-item" th:each="i, c : ${pages}">
+        <a th:href="@{/ateliers/liste(page=${c.count}, mc=${mc})}"
+           th:text="${c.count}"
+           th:classappend="${current==c.count-1} ? 'active' : ''"
+           class="page-link mx-1">
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>
