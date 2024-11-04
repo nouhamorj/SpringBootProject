@@ -12,7 +12,7 @@ public interface IServiceAtelier {
     Page <Atelier> rechercherAteliersParTitre(String motCle, Pageable p);
     public List<Atelier> rechercherAteliersParTheme(String motCle);
     public List<Atelier> getAteliers();
-    public void ajouterAtelier(Atelier atelier, MultipartFile[] pdfFiles) throws IOException;
+    public void ajouterAtelier(Atelier atelier, MultipartFile file) throws IOException;
     public void updateAtelier(Long id, Atelier atelier);
     public void deleteAtelier(Long id);
     public Atelier getAtelier(Long id);

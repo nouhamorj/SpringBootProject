@@ -42,7 +42,7 @@
     <div class="card mx-auto" style="max-width:70%;">
         <div class="card-body">
             <h2 class="form-title text-start">Ajouter un Atelier</h2> <!-- Titre du formulaire -->
-            <form th:action="@{/ateliers/save}" method="post" enctype=multipart/form-data> <!-- Ajout de l'encodage -->
+            <form  method="post" enctype=multipart/form-data th:action="@{/ateliers/save}"> <!-- Ajout de l'encodage -->
                 <div class="mb-3">
                     <label class="form-label">Titre de l'atelier :</label>
                     <input type="text" id="titre" class="form-control"  th:field="*{atelier.titre}" th:value="${atelier.titre}" required />
@@ -50,6 +50,10 @@
                 <div class="mb-3">
                     <label class="form-label">Description :</label>
                     <textarea id="description" class="form-control" th:field="*{atelier.description}" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Date :</label>
+                    <input type="datetime-local" id="date" class="form-control" th:field="*{atelier.dateAtelier}" required></input>
                 </div>
                 <div class="mb-3">
                     <label for="formateur" class="form-label">Animateur :</label>
@@ -73,9 +77,10 @@
                         </div>
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Téléchargez des fichiers PDF :</label>
-                    <input type="file" class="form-control" name="pdfFiles" multiple accept="application/pdf" />
+               <div class="mb-3">
+                    <label class="form-label">Téléchargez un fichier PDF :</label>
+                    <input type="file" class="form-control" name="pdf" accept="application/pdf" />
+                    <input type="hidden" name="nomPdf" th:value="${atelier.nomPdf}">
                 </div>
                 <div class="text-end">
                     <button type="submit" class="btn" style="color: white; background: blue">Ajouter</button>

@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -17,9 +19,12 @@ public class Atelier {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    @Temporal(TemporalType.TIMESTAMP)// Enregistre la date avec l'heure
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+    private Date dateAtelier;
     private String titre;
     private String description;
+    private String nomPdf;
 
     @ManyToOne
     @JoinColumn(name = "formateur_id")
@@ -33,14 +38,5 @@ public class Atelier {
     )
     private List<Theme> themes;
 
-    @ManyToMany
-    @JoinTable(
-            name = "formation_atelier",
-            joinColumns = @JoinColumn(name = "atelier_id"),
-            inverseJoinColumns = @JoinColumn(name = "formation_id")
-    )
-    private List<Formation> formations;
 
-    @OneToMany(mappedBy = "atelier", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<DocumentPDF> documentsPDF; // Liste des documents PDF associés à l'atelier
 }

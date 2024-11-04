@@ -2,7 +2,6 @@ package com.gestion.formation.services;
 
 
 import com.gestion.formation.entities.Atelier;
-import com.gestion.formation.entities.DocumentPDF;
 import com.gestion.formation.repositories.AtelierRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
@@ -13,16 +12,19 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @Service
 @AllArgsConstructor
 public class ServiceAtelier implements IServiceAtelier {
     private AtelierRepository ar;
-    private ServiceDocumentPDF service;
+
     @Override
     public Page<Atelier> rechercherAteliersParTitre(String motCle, Pageable p) {
-        return ar.findByTitreContains(motCle,p);
+        return ar.findByTitreContains(motCle, p);
     }
 
     @Override
@@ -36,25 +38,13 @@ public class ServiceAtelier implements IServiceAtelier {
     }
 
     @Override
-    public void ajouterAtelier(Atelier atelier, MultipartFile[] pdfFiles) throws IOException {
-        // Enregistrer l'atelier d'abord
-        atelier = ar.save(atelier);
-
-        if (pdfFiles != null && pdfFiles.length > 0) {
-            for (MultipartFile pdfFile : pdfFiles) {
-                if (!pdfFile.isEmpty()) {
-                    // Appel de la méthode uploadPDF pour enregistrer le fichier et obtenir l'objet DocumentPDF
-                    DocumentPDF document = service.uploadPDF(pdfFile, atelier);
-
-                    // Ajouter le document à l'atelier
-                    atelier.getDocumentsPDF().add(document);
-                }
-            }
+    public void ajouterAtelier(Atelier atelier, MultipartFile multipartFile) throws IOException {
+        if (!multipartFile.isEmpty()) {
+            atelier.setNomPdf(saveFile(multipartFile));
         }
-
-        // Mettre à jour l'atelier avec les documents
         ar.save(atelier);
     }
+
     @Override
     public void updateAtelier(Long id, Atelier atelier) {
         Atelier existingAtelier = ar.findById(id)
@@ -77,8 +67,38 @@ public class ServiceAtelier implements IServiceAtelier {
         return ar.findById(id).orElse(null);
     }
 
-    private void saveFile(MultipartFile file, String path) throws IOException {
-        File destFile = new File(path);
-        file.transferTo(destFile); // Transférer le fichier sur le serveur
+    private String saveFile(MultipartFile mf) throws IOException {
+        String nomFile = mf.getOriginalFilename();
+        String[] tab = nomFile.split("\\.");
+        String newName = tab[0] + System.currentTimeMillis() + "." + tab[1];
+        String directory = "src/main/resources/static/pdfs";
+        File fileDir = new File(directory);
+        if (!fileDir.exists()) { //vérifie si le dossier existe sinon le cré
+            fileDir.mkdirs();
+        }
+        Path path = Paths.get(fileDir.getAbsolutePath(), newName);
+        Files.write(path, mf.getBytes());
+        return newName;
+
     }
+
+
+    public byte[] getPdfFile(Long id) throws IOException {
+        // Récupérer l'atelier par son ID
+        Atelier atelier = getAtelier(id);
+
+        // Vérifiez si l'atelier et le PDF existent
+        if (atelier != null && atelier.getNomPdf() != null) {
+            // Définir le chemin vers le fichier PDF
+            Path pdfPath = Paths.get("src/main/resources/static/pdfs", atelier.getNomPdf());
+
+            // Vérifiez si le fichier existe
+            if (Files.exists(pdfPath)) {
+                // Lire le contenu du fichier en tant que tableau d'octets
+                return Files.readAllBytes(pdfPath);
+            }
+        }
+        return null; // Retourne null si le fichier n'est pas trouvé
+    }
+
 }

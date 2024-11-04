@@ -1,5 +1,6 @@
 package com.gestion.formation.services;
 
+import com.gestion.formation.entities.Atelier;
 import com.gestion.formation.entities.Theme;
 import com.gestion.formation.repositories.ThemeRepository;
 import lombok.AllArgsConstructor;
@@ -20,18 +21,19 @@ public class ServiceTheme implements IServiceTheme{
     }
 
     @Override
-    public void ajouterTheme(Theme theme) {
+    public Theme ajouterTheme(Theme theme) {
         tr.save(theme);
-
+        return theme;
     }
 
     @Override
-    public void mettreAJourTheme(Long id, Theme theme) {
+    public Theme mettreAJourTheme(Long id, Theme theme) {
         Theme existingtheme = tr.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Le theme n'existe pas"));
         existingtheme.setNom(theme.getNom());
         tr.save(existingtheme);
 
+        return existingtheme;
     }
 
     @Override
@@ -49,4 +51,6 @@ public class ServiceTheme implements IServiceTheme{
     public List<Theme> getAllthemes() {
         return tr.findAll();
     }
+
+
 }

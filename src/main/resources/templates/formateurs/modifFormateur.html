@@ -39,7 +39,7 @@
     <div class="card mx-auto" style="max-width:80%;">
         <div class="card-body">
             <h2 class="form-title text-start">Modifier un Formateur</h2> <!-- Titre du formulaire -->
-            <form method="post" enctype="multipart/form-data" th:action="@{|/formateurs/save-modification/${formateur.id}|}">
+            <form method="post" enctype="multipart/form-data" th:action="@{/formateurs/save-modification/{id}(id=${formateur.id})}">
                 <div class="mb-3">
                     <label class="form-label">Nom :</label>
                     <input type="text" id="nom" class="form-control" placeholder="&#xf15b;" th:field="*{formateur.nom}" th:value="${formateur.nom}" required />

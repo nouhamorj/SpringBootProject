@@ -1,6 +1,5 @@
 package com.gestion.formation.services;
 
-import com.gestion.formation.entities.Atelier;
 import com.gestion.formation.entities.Formateur;
 import com.gestion.formation.repositories.FormateurRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -26,26 +25,36 @@ public class ServiceFormateur implements IServiceFormateur {
     }
 
     @Override
-    public void ajouterFormateur(Formateur formateur, MultipartFile file) throws IOException {
-        if(!file.isEmpty())
+    public Formateur ajouterFormateur(Formateur formateur, MultipartFile file) throws IOException {
+        if (!file.isEmpty()){
             formateur.setNomImage(saveImage(file));
+        }
         fr.save(formateur);
+
+        return formateur;
     }
 
     @Override
-    public void updateFormateur(Long id, Formateur formateur, MultipartFile mf)  throws Exception{
+    public Formateur updateFormateur(Long id, Formateur formateur, MultipartFile mf) throws Exception {
         Formateur existingFormateur = fr.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Formateur not found with id: " + id));
+
         existingFormateur.setNom(formateur.getNom());
         existingFormateur.setPrenom(formateur.getPrenom());
         existingFormateur.setEmail(formateur.getEmail());
         existingFormateur.setAdresse(formateur.getAdresse());
         existingFormateur.setTelephone(formateur.getTelephone());
+
         if (!mf.isEmpty()) {
             String nomFichier = saveImage(mf);
             existingFormateur.setNomImage(nomFichier);
+        } else {
+            // Retain the existing image name if no new file is uploaded
+            existingFormateur.setNomImage(existingFormateur.getNomImage());
         }
+
         fr.save(existingFormateur);
+        return existingFormateur;
     }
 
     @Override
@@ -64,7 +73,7 @@ public class ServiceFormateur implements IServiceFormateur {
         return fr.findAll();
     }
 
-    private String saveImage(MultipartFile mf) throws IOException {
+    public String saveImage(MultipartFile mf) throws IOException {
         String nomFile = mf.getOriginalFilename();
         String[] tab=nomFile.split("\\.");
         String newName = tab[0] + System.currentTimeMillis() + "." + tab[1];
@@ -91,5 +100,22 @@ public class ServiceFormateur implements IServiceFormateur {
         Path p=Paths.get(System.getProperty("user.home")+"/photosCD2024/", newName);
         Files.write(p,mf.getBytes());
         return newName;
+    }
+
+
+    public byte[] getImage(Long id) throws IOException {
+        Formateur formateur = getFormateur(id);
+        if (formateur == null || formateur.getNomImage() == null) {
+            throw new EntityNotFoundException("Formateur not found or no image available with id: " + id);
+        }
+
+        // Construct the file path
+        Path imagePath = Paths.get("src/main/resources/static/photos", formateur.getNomImage());
+        if (!Files.exists(imagePath)) {
+            throw new EntityNotFoundException("Image not found at path: " + imagePath);
+        }
+
+        // Read the image file and return as byte array
+        return Files.readAllBytes(imagePath);
     }
 }

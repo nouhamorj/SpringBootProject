@@ -1,6 +1,7 @@
 package com.gestion.formation.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +26,8 @@ public class Formateur {
     private String email;
     private String telephone;
     private String nomImage;
+
+    @JsonIgnore
     @OneToMany(mappedBy = "formateur")
     private List<Atelier> ateliers = new ArrayList<>();
 }

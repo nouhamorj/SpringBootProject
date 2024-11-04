@@ -31,15 +31,18 @@
     <table class="table table-bordered table-hover">
       <thead>
       <tr>
+        <th style="color:orangered">Date</th>
         <th style="color:orangered">Titre</th>
-        <th style="width:45%; color: orangered">Description</th>
+        <th style="width:30%; color: orangered">Description</th>
         <th style="color:orangered">Thème</th>
         <th style="color:orangered">Animateur</th>
+        <th style="color:orangered">PDF</th>
         <th style="color:orangered">Actions</th>
       </tr>
       </thead>
       <tbody>
       <tr th:each="atelier : ${ateliers}">
+        <td th:text="${#dates.format(atelier.dateAtelier, 'EEEE, dd MMMM , yyyy HH:mm')}"></td>
         <td th:text="${atelier.titre}"></td>
         <td th:text="${atelier.description}"></td>
         <td>
@@ -50,6 +53,7 @@
           </ul>
         </td>
         <td th:text="${atelier.formateur.prenom}+' '+${atelier.formateur.nom}"></td>
+        <td><a th:href="@{/pdfs/{pdfName}(pdfName=${atelier.nomPdf})}" target="_blank">Voir le PDF</a></td>
         <td>
           <a th:href="@{/ateliers/{id}(id=${atelier.id})}" class="btn  btn-sm"><i style="color:blue" class="far fa-eye"></i></a>
           <a th:href="@{/ateliers/delete/{id}(id=${atelier.id})}" class="btn btn-sm" onclick="return confirm('Confirmer la suppression ?')"><i style="color:orangered" class="fas fa-trash"></i></a>

@@ -18,7 +18,7 @@ public class FormateurController {
     @GetMapping("/liste-formateurs")
     public String listeFormateurs(Model model,
                                   @RequestParam(name = "page", defaultValue = "1") int page,
-                                  @RequestParam(name = "size", defaultValue = "2") int size,
+                                  @RequestParam(name = "size", defaultValue = "4") int size,
                                   @RequestParam(name = "mc", defaultValue = "") String mc) {
         Page<Formateur> listPage = sf.rechercherFormateursParNom(mc, PageRequest.of(page - 1, size));
         model.addAttribute("formateurs", listPage.getContent());

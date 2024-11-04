@@ -2,7 +2,6 @@ package com.gestion.formation.controller;
 
 import com.gestion.formation.entities.Atelier;
 import com.gestion.formation.services.IServiceAtelier;
-import com.gestion.formation.services.IServiceDocumentPDF;
 import com.gestion.formation.services.IServiceFormateur;
 import com.gestion.formation.services.IServiceTheme;
 import lombok.AllArgsConstructor;
@@ -23,13 +22,13 @@ public class AtelierController {
     private IServiceAtelier serviceAtelier;
     private IServiceTheme serviceTheme;
     private IServiceFormateur serviceFormateur;
-    private IServiceDocumentPDF serviceDocumentPDF;
+
 
     // Afficher tous les ateliers
     @GetMapping(path = {"/liste"})
     public String afficherAteliers(Model model,
                                    @RequestParam(name = "page" , defaultValue = "1") int page,
-                                   @RequestParam(name="size", defaultValue = "2") int size,
+                                   @RequestParam(name="size", defaultValue = "4") int size,
                                    @RequestParam(name="mc", defaultValue = "")String mc) {
         Page<Atelier> listPage= serviceAtelier.rechercherAteliersParTitre(mc, PageRequest.of(page-1,size));
         model.addAttribute("ateliers", listPage.getContent());
@@ -72,15 +71,9 @@ public class AtelierController {
 
 
     @PostMapping("/save")
-    public String ajouterAtelier(@ModelAttribute Atelier atelier, @RequestParam("pdfFiles") MultipartFile[] pdfFiles) throws IOException {
-        try {
-            serviceAtelier.ajouterAtelier(atelier, pdfFiles);
-            return "redirect:/ateliers/liste"; // Redirection après succès
-        } catch (Exception e) {
-            // Gérer l'erreur en affichant un message ou redirigez vers une page d'erreur
-            e.printStackTrace(); // Pour le débogage, vous pouvez améliorer le traitement des erreurs
-            return "redirect:/ateliers/error"; // Par exemple, une page d'erreur
-        }
+    public String ajouterAtelier(@ModelAttribute Atelier atelier,@RequestParam("pdf") MultipartFile pdfFile) throws IOException {
+        serviceAtelier.ajouterAtelier(atelier,pdfFile);
+        return "redirect:/ateliers/liste";
     }
 
     @GetMapping(path = "modifier/{id}")
