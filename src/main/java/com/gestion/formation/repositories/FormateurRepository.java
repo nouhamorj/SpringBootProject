@@ -11,4 +11,5 @@ import java.util.List;
 @Repository
 public interface FormateurRepository extends JpaRepository<Formateur, Long> {
     Page<Formateur> findByNomContains(String motCle, Pageable pageable);
+    List<Formateur> findByNomContains(String motCle);
 }

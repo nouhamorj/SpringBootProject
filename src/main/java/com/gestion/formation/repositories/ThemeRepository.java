@@ -12,4 +12,5 @@ import java.util.List;
 @Repository
 public interface ThemeRepository extends JpaRepository<Theme, Long> {
     Page<Theme> findByNomContains(String motCle, Pageable pageable);
+    List<Theme> findByNomContains(String motCle);
 }

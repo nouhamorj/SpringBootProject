@@ -2,7 +2,10 @@ package com.gestion.formation.controller.restController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gestion.formation.entities.Atelier;
+import com.gestion.formation.repositories.AtelierRepository;
 import com.gestion.formation.services.ServiceAtelier;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.AllArgsConstructor;
@@ -28,6 +31,7 @@ import java.util.List;
 @RequestMapping("/api/ateliers")
 public class AtelierRestController {
     private ServiceAtelier serviceAtelier;
+    private AtelierRepository atelierRepository;
     @GetMapping
     public List<Atelier> getAllAteliers() {
         return serviceAtelier.getAteliers(); // Vous devez avoir cette méthode dans votre service
@@ -39,13 +43,18 @@ public class AtelierRestController {
         return serviceAtelier.getAtelier(id);
     }
 
-    @PostMapping("/save")
+    /*@PostMapping("/save")
     public String addAtelier(@RequestBody Atelier atelier, @RequestParam MultipartFile pdf) throws IOException {
         serviceAtelier.ajouterAtelier(atelier, pdf);
         return "Atelier ajouté avec succès";
+    }*/
+
+
+    @PostMapping("/update/{id}")
+    public String updateAtelier(@PathVariable Long id, @RequestBody Atelier atelier) {
+        serviceAtelier.updateAtelier(id, atelier);
+        return "Atelier modifié avec succès";
     }
-
-
 
     // Supprimer un atelier
     @DeleteMapping("/delete/{id}")
@@ -60,22 +69,38 @@ public class AtelierRestController {
         return serviceAtelier.rechercherAteliersParTheme(motCle);
     }
 
-    public ResponseEntity<byte[]> getPdfForAtelier(@PathVariable Long id) throws IOException {
-        try {
-            Atelier atelier = serviceAtelier.getAtelier(id);
-            if (atelier != null && atelier.getNomPdf() != null) {
-                byte[] pdfBytes = serviceAtelier.getPdfFile(id);
-                if (pdfBytes != null) {
-                    HttpHeaders headers = new HttpHeaders();
-                    headers.setContentType(MediaType.APPLICATION_PDF);
-                    return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-                }
+
+    @GetMapping(value = "/pdf/{id}", produces = MediaType.APPLICATION_PDF_VALUE)
+    public byte[] getPdfForAtelier(@PathVariable Long id) throws IOException {
+        Atelier atelier = serviceAtelier.getAtelier(id);
+
+        // Check if the Atelier has an associated PDF file
+        if (atelier != null && atelier.getNomPdf() != null) {
+            byte[] pdfBytes = serviceAtelier.getPdfFile(id); // Implement this method to retrieve PDF bytes
+
+            // Return the PDF byte array if found
+            if (pdfBytes != null) {
+                return pdfBytes;
             }
-            return ResponseEntity.notFound().build(); // Handle not found case gracefully
-        } catch (IOException e) {
-            e.printStackTrace(); // Log the exception for debugging
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Handle internal server error
         }
+
+        // Return an empty byte array if no PDF is found
+        return new byte[0];
+    }
+
+
+    /*@PostMapping(value = "/save", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public String addAtelier(@ModelAttribute Atelier atelier, @RequestParam("pdf") MultipartFile pdf
+    ) throws IOException {
+        // Appel du service pour ajouter l'atelier avec le fichier PDF
+        serviceAtelier.ajouterAtelier(atelier, pdf);
+        return "Atelier ajouté avec succès";
+    }*/
+
+    @PostMapping(value = "/save")
+    public String addAtelier(@RequestBody Atelier atelier ){
+        atelierRepository.save(atelier);
+        return "Atelier ajouté avec succès";
     }
 
 }

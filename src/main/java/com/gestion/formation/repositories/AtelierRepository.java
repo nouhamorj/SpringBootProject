@@ -13,7 +13,8 @@ import java.util.List;
 public interface AtelierRepository extends JpaRepository<Atelier, Long> {
     // Recherche par titre d'atelier
     Page<Atelier> findByTitreContains(String mc, Pageable pageable);
-    // Recherche par nom du thème lié (via une requête JPQL)
+
+    // Recherche par nom du thème
     @Query("SELECT a FROM Atelier a JOIN a.themes t WHERE t.nom LIKE %:mc%")
     List<Atelier> findByThemeNomContains(@Param("mc") String mc);
 

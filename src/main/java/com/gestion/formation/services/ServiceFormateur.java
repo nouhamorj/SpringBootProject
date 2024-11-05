@@ -25,12 +25,16 @@ public class ServiceFormateur implements IServiceFormateur {
     }
 
     @Override
+    public List<Formateur> rechercherFormateursParNom(String motCle) {
+        return fr.findByNomContains(motCle);
+    }
+
+    @Override
     public Formateur ajouterFormateur(Formateur formateur, MultipartFile file) throws IOException {
         if (!file.isEmpty()){
             formateur.setNomImage(saveImage(file));
         }
         fr.save(formateur);
-
         return formateur;
     }
 
@@ -58,6 +62,19 @@ public class ServiceFormateur implements IServiceFormateur {
     }
 
     @Override
+    public Formateur updateFormateur2(Long id, Formateur formateur) {
+        Formateur existingFormateur = fr.findById(id).orElse(null);
+        existingFormateur.setNom(formateur.getNom());
+        existingFormateur.setPrenom(formateur.getPrenom());
+        existingFormateur.setEmail(formateur.getEmail());
+        existingFormateur.setAdresse(formateur.getAdresse());
+        existingFormateur.setTelephone(formateur.getTelephone());
+        existingFormateur.setNomImage(existingFormateur.getNomImage());
+        fr.save(existingFormateur);
+        return existingFormateur;
+    }
+
+    @Override
     public void deleteFormateur(Long id) {
         fr.deleteById(id);
 
@@ -77,13 +94,10 @@ public class ServiceFormateur implements IServiceFormateur {
         String nomFile = mf.getOriginalFilename();
         String[] tab=nomFile.split("\\.");
         String newName = tab[0] + System.currentTimeMillis() + "." + tab[1];
-        // Use an external directory for saving images
         String directory = "src/main/resources/static/photos";
         File fileDir = new File(directory);
-
-        // Check if the directory exists, if not create it
         if (!fileDir.exists()) {
-            fileDir.mkdirs();  // Creates the directory and any necessary parent directories
+            fileDir.mkdirs();
         }
 
         Path path = Paths.get(fileDir.getAbsolutePath(), newName);
@@ -92,30 +106,17 @@ public class ServiceFormateur implements IServiceFormateur {
 
     }
 
-    private String uploadImage(MultipartFile mf) throws IOException {
-        String oldname = mf.getOriginalFilename();
-        String[] tab=oldname.split("\\.");
-        String newName = tab[0] + System.currentTimeMillis() + "." + tab[1];
-
-        Path p=Paths.get(System.getProperty("user.home")+"/photosCD2024/", newName);
-        Files.write(p,mf.getBytes());
-        return newName;
-    }
-
-
     public byte[] getImage(Long id) throws IOException {
         Formateur formateur = getFormateur(id);
         if (formateur == null || formateur.getNomImage() == null) {
-            throw new EntityNotFoundException("Formateur not found or no image available with id: " + id);
+            throw new EntityNotFoundException("Formateur introuvable with id: " + id);
         }
-
-        // Construct the file path
         Path imagePath = Paths.get("src/main/resources/static/photos", formateur.getNomImage());
         if (!Files.exists(imagePath)) {
-            throw new EntityNotFoundException("Image not found at path: " + imagePath);
+            throw new EntityNotFoundException("Image Introuvable: " + imagePath);
         }
-
-        // Read the image file and return as byte array
         return Files.readAllBytes(imagePath);
     }
+
+
 }

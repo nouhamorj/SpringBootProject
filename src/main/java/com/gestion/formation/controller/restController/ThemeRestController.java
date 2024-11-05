@@ -43,5 +43,8 @@ public class ThemeRestController {
         serviceTheme.deleteTheme(id);
     }
 
-
+    @GetMapping("/recherche-theme")
+    public List<Theme> rechercherAteliersParTitre(@RequestParam("motCle") String motCle) {
+        return serviceTheme.rechercherThemesParNom2(motCle);
+    }
 }

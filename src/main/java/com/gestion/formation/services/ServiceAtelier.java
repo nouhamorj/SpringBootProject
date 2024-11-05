@@ -5,6 +5,7 @@ import com.gestion.formation.entities.Atelier;
 import com.gestion.formation.repositories.AtelierRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -73,7 +74,7 @@ public class ServiceAtelier implements IServiceAtelier {
         String newName = tab[0] + System.currentTimeMillis() + "." + tab[1];
         String directory = "src/main/resources/static/pdfs";
         File fileDir = new File(directory);
-        if (!fileDir.exists()) { //vérifie si le dossier existe sinon le cré
+        if (!fileDir.exists()) { //ken dossier mai famech yasn3ou
             fileDir.mkdirs();
         }
         Path path = Paths.get(fileDir.getAbsolutePath(), newName);
@@ -82,23 +83,16 @@ public class ServiceAtelier implements IServiceAtelier {
 
     }
 
-
     public byte[] getPdfFile(Long id) throws IOException {
-        // Récupérer l'atelier par son ID
         Atelier atelier = getAtelier(id);
-
-        // Vérifiez si l'atelier et le PDF existent
         if (atelier != null && atelier.getNomPdf() != null) {
-            // Définir le chemin vers le fichier PDF
             Path pdfPath = Paths.get("src/main/resources/static/pdfs", atelier.getNomPdf());
-
-            // Vérifiez si le fichier existe
             if (Files.exists(pdfPath)) {
-                // Lire le contenu du fichier en tant que tableau d'octets
                 return Files.readAllBytes(pdfPath);
             }
         }
-        return null; // Retourne null si le fichier n'est pas trouvé
+        return null;
     }
+
 
 }

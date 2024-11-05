@@ -20,6 +20,10 @@ public class ServiceTheme implements IServiceTheme{
         return tr.findByNomContains(motCle,pageable);
     }
 
+    public List<Theme> rechercherThemesParNom2(String motCle) {
+        return tr.findByNomContains(motCle);
+    }
+
     @Override
     public Theme ajouterTheme(Theme theme) {
         tr.save(theme);
@@ -28,18 +32,15 @@ public class ServiceTheme implements IServiceTheme{
 
     @Override
     public Theme mettreAJourTheme(Long id, Theme theme) {
-        Theme existingtheme = tr.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Le theme n'existe pas"));
+        Theme existingtheme = tr.findById(id).orElse(null);
         existingtheme.setNom(theme.getNom());
         tr.save(existingtheme);
-
         return existingtheme;
     }
 
     @Override
     public void deleteTheme(Long id) {
         tr.deleteById(id);
-
     }
 
     @Override

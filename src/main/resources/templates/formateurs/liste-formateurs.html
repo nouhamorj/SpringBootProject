@@ -49,8 +49,9 @@
                 <td th:text="${f.telephone}"></td>
                 <td th:text="${f.email}"></td>
                 <td>
-                    <a th:href="@{/formateurs/modifier-formateur/{id}(id=${f.id})}" class="btn btn-sm"><i style="color:blue" class="far fa-edit"></i></a>
-                    <a th:href="@{/formateurs/delete/{id}(id=${f.id})}" class="btn btn-sm" onclick="return confirm('Confirmer la suppression ?')"><i style="color:orangered" class="fas fa-trash"></i></a>
+                    <a th:href="@{/formateurs/{id}(id=${f.id})}" class="btn  btn-sm"><i style="color:blue" class="far fa-eye"></i></a>
+                    <a th:href="@{/formateurs/modifier-formateur/{id}(id=${f.id})}" class="btn btn-sm"><i style="color:orangered"  class="far fa-edit"></i></a>
+                    <a th:href="@{/formateurs/delete/{id}(id=${f.id})}" class="btn btn-sm" onclick="return confirm('Confirmer la suppression ?')"><i style="color:blue" class="fas fa-trash"></i></a>
                 </td>
             </tr>
             <tr th:if="${#lists.isEmpty(formateurs)}">
