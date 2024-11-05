@@ -53,7 +53,7 @@
           </ul>
         </td>
         <td th:text="${atelier.formateur.prenom}+' '+${atelier.formateur.nom}"></td>
-        <td><a th:href="@{/pdfs/{pdfName}(pdfName=${atelier.nomPdf})}" target="_blank">Voir le PDF</a></td>
+        <td><a th:href="@{/pdfs/{pdfName}(pdfName=${atelier.nomPdf})}"  target="_blank">Voir le PDF</a></td>
         <td>
           <a th:href="@{/ateliers/{id}(id=${atelier.id})}" class="btn  btn-sm"><i style="color:blue" class="far fa-eye"></i></a>
           <a th:href="@{/ateliers/delete/{id}(id=${atelier.id})}" class="btn btn-sm" onclick="return confirm('Confirmer la suppression ?')"><i style="color:orangered" class="fas fa-trash"></i></a>

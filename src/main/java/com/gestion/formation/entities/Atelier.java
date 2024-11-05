@@ -15,7 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 @Builder
-public class Atelier {
+public class   Atelier {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

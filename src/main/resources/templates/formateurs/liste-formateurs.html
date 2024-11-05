@@ -42,7 +42,7 @@
             </thead>
             <tbody>
             <tr th:each="f : ${formateurs}">
-                <td><img th:src="@{'/photos/' + ${f.nomImage}}" width="50" height="50" alt="Photo du formateur"></td>
+                <td><img  th:src="@{/photos/{imageName}(imageName=${f.nomImage})}"  width="50" height="50" alt="Photo du formateur"></td>
                 <td th:text="${f.nom}"></td>
                 <td th:text="${f.prenom}"></td>
                 <td th:text="${f.adresse}"></td>
