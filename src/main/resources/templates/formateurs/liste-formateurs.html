@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Liste des Formateurs</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+    <script src="https://kit.fontawesome.com/d4101d2a3b.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<div th:replace="header :: header"></div>
+
+<div class="container mt-5" style="max-width: 2200px; width: 90%;">
+    <div class="mb-4">
+        <h1 style="color: blue">Liste des Formateurs</h1>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <form th:action="@{/formateurs/liste-formateurs}" method="get" class="d-flex" style="width: 500px;">
+            <div class="input-group">
+                <input type="text" name="mc" class="form-control" placeholder="Rechercher par nom" />
+                <button type="submit" style="background: blue; color: white" class="btn">Rechercher</button>
+            </div>
+        </form>
+        <a th:href="@{/formateurs/ajout-formateur}" class="btn" style="background: orangered; color:white">Ajouter un nouveau formateur</a>
+    </div>
+
+    <!-- Table des formateurs -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead>
+            <tr>
+                <th style="color:orangered">Photo</th>
+                <th style="color:orangered">Nom</th>
+                <th style="color:orangered">Prénom</th>
+                <th style="color:orangered">Adresse</th>
+                <th style="color:orangered">Numéro de téléphone</th>
+                <th style="color:orangered">Email</th>
+                <th style="color:orangered">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="f : ${formateurs}">
+                <td><img  th:src="@{/photos/{imageName}(imageName=${f.nomImage})}"  width="50" height="50" alt="Photo du formateur"></td>
+                <td th:text="${f.nom}"></td>
+                <td th:text="${f.prenom}"></td>
+                <td th:text="${f.adresse}"></td>
+                <td th:text="${f.telephone}"></td>
+                <td th:text="${f.email}"></td>
+                <td>
+                    <a th:href="@{/formateurs/{id}(id=${f.id})}" class="btn  btn-sm"><i style="color:blue" class="far fa-eye"></i></a>
+                    <a th:href="@{/formateurs/modifier-formateur/{id}(id=${f.id})}" class="btn btn-sm"><i style="color:orangered"  class="far fa-edit"></i></a>
+                    <a th:href="@{/formateurs/delete/{id}(id=${f.id})}" class="btn btn-sm" onclick="return confirm('Confirmer la suppression ?')"><i style="color:blue" class="fas fa-trash"></i></a>
+                </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(formateurs)}">
+                <td colspan="7" class="text-center">Aucun formateur trouvé.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-content-end mt-3">
+        <ul class="pagination">
+            <li class="page-item" th:each="i, c : ${pages}">
+                <a th:href="@{/formateurs/liste-formateurs(page=${c.count}, mc=${mc})}"
+                   th:text="${c.count}"
+                   th:classappend="${current==c.count-1} ? 'active' : ''"
+                   class="page-link mx-1">
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+</body>
+</html>
