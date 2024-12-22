@@ -14,7 +14,7 @@ pipeline {
             steps {
                 git branch: 'main',
                     url: 'git@github.com:nouhamorj/SpringBootProject.git',
-                    credentialsId: 'Gitlab_ssh'
+                    credentialsId: 'github_ssh''
             }
         }
         
