@@ -4,7 +4,7 @@ pipeline {
         pollSCM ('H/5 * * * *')
     }
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub')  // Identifiants Docker Hub
+        DOCKERHUB_CREDENTIALS = credentials('nouha')  // Identifiants Docker Hub
         IMAGE_NAME = 'springbootproject'  // Nom de l'image Docker pour le serveur
         MYSQL_IMAGE = 'mysql:8.0.33'  // Image MySQL à utiliser
         MYSQL_DB = 'formation'  // Nom de la base de données
