@@ -1,8 +1,9 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('nouha') // Docker Hub
-        GITHUB_CREDENTIALS = credentials('727e2456-ee77-4989-bee1-57ccd3c43101') // GitHub
+        // Identifiants pour Docker Hub et GitHub
+        DOCKERHUB_CREDENTIALS = credentials('nouhamorj') // Docker Hub
+        GITHUB_CREDENTIALS = credentials('github-jenkins') // GitHub
     }
     stages {
         stage('Checkout') {
@@ -10,7 +11,7 @@ pipeline {
                 echo "Démarrage de l'étape de Checkout"
                 git branch: 'master',
                     url: 'git@github.com:nouhamorj/SpringBootProject.git',
-                    credentialsId: '727e2456-ee77-4989-bee1-57ccd3c43101'
+                    credentialsId: 'github-jenkins' // ID des credentials GitHub
                 echo "Fin de l'étape de Checkout"
             }
         }
@@ -18,7 +19,7 @@ pipeline {
             steps {
                 echo "Démarrage de la construction de l'image Docker"
                 script {
-                    dockerImage = docker.build("nouhamorj/springboot-project")
+                    dockerImage = docker.build("nouhamorj/springboot-project") // Nom de l'image Docker
                 }
                 echo "Image Docker construite avec succès"
             }
@@ -28,7 +29,7 @@ pipeline {
                 echo "Démarrage de l'envoi de l'image Docker à Docker Hub"
                 script {
                     docker.withRegistry('', "${DOCKERHUB_CREDENTIALS}") {
-                        dockerImage.push()
+                        dockerImage.push() // Pousse l'image sur Docker Hub
                     }
                 }
                 echo "Image Docker envoyée avec succès"
