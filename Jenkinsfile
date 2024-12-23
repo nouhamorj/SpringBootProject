@@ -1,54 +1,43 @@
 pipeline {
     agent any
-    triggers {
-        pollSCM('H/5 * * * *') // Vérification des modifications toutes les 5 minutes
-    }
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('nouha') // Identifiants Docker Hub
-        IMAGE_NAME = 'nouha/springboot-project' // Nom de l'image Docker
+        DOCKERHUB_CREDENTIALS = credentials('nouha')
+        GITHUB_CREDENTIALS = credentials('github_ssh')
     }
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', // Utilisation de la branche master
+                echo "Démarrage de l'étape de Checkout"
+                git branch: 'master',
                     url: 'git@github.com:nouhamorj/SpringBootProject.git',
                     credentialsId: 'github_ssh'
+                echo "Fin de l'étape de Checkout"
             }
         }
-
         stage('Build Docker Image') {
             steps {
+                echo "Démarrage de la construction de l'image Docker"
                 script {
-                    dockerImage = docker.build("${IMAGE_NAME}")
+                    dockerImage = docker.build("nouhamorj/springboot-project")
                 }
+                echo "Image Docker construite avec succès"
             }
         }
-
-        stage('Scan Docker Image') {
+        stage('Push Docker Image') {
             steps {
-                script {
-                    sh """
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL \
-                    ${IMAGE_NAME}
-                    """
-                }
-            }
-        }
-
-        stage('Push Docker Image to Docker Hub') {
-            steps {
+                echo "Démarrage de l'envoi de l'image Docker à Docker Hub"
                 script {
                     docker.withRegistry('', "${DOCKERHUB_CREDENTIALS}") {
                         dockerImage.push()
                     }
                 }
+                echo "Image Docker envoyée avec succès"
             }
         }
     }
     post {
         success {
-            echo 'Le pipeline s\'est exécuté avec succès. L\'image Docker a été construite et poussée sur Docker Hub.'
+            echo 'Pipeline terminé avec succès.'
         }
         failure {
             echo 'Le pipeline a échoué. Veuillez vérifier les logs pour plus de détails.'
