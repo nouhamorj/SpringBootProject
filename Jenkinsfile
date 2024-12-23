@@ -1,37 +1,39 @@
 pipeline {
     agent any
     triggers {
-        pollSCM ('H/5 * * * *')
+        pollSCM('H/5 * * * *')
     }
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('nouha')  // Identifiants Docker Hub
-        IMAGE_NAME = 'springbootproject'  // Nom de l'image Docker pour le serveur
-        MYSQL_IMAGE = 'mysql:8.0.33'  // Image MySQL à utiliser
-        MYSQL_DB = 'formation'  // Nom de la base de données
+        DOCKERHUB_CREDENTIALS = credentials('nouha') // Identifiants Docker Hub
+        GITHUB_CREDENTIALS = credentials('github_ssh') // Identifiants GitHub
+        IMAGE_NAME_SERVER = '[username]/mern-server'
+        IMAGE_NAME_CLIENT = '[username]/mern-client'
     }
     stages {
         stage('Checkout') {
             steps {
                 git branch: 'main',
                     url: 'git@github.com:nouhamorj/SpringBootProject.git',
-                    credentialsId: 'github_ssh''
+                    credentialsId: 'github_ssh' // Utilisation des identifiants GitHub
             }
         }
-        
+
         stage('Build Server Image') {
             steps {
-                script {
-                    // Construction de l'image Docker pour l'application Spring Boot
-                    dockerImage = docker.build("springbootproject")
+                dir('server') {
+                    script {
+                        dockerImageServer = docker.build("${IMAGE_NAME_SERVER}")
+                    }
                 }
             }
         }
 
-        stage('Build MySQL Image') {
+        stage('Build Client Image') {
             steps {
-                script {
-                    // Construction de l'image Docker pour MySQL (optionnel, si vous n'utilisez pas l'image officielle)
-                    dockerImageMySQL = docker.build("mysql:8.0.33")
+                dir('client') {
+                    script {
+                        dockerImageClient = docker.build("${IMAGE_NAME_CLIENT}")
+                    }
                 }
             }
         }
@@ -39,24 +41,22 @@ pipeline {
         stage('Scan Server Image') {
             steps {
                 script {
-                    // Scan de l'image Docker de l'application avec Trivy (optionnel)
                     sh """
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy:latest image --exit-code 0 --severity LOW,MEDIUM,HIGH,CRITICAL \
-                        ${dockerImage}
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:latest image --exit-code 0 --severity LOW,MEDIUM,HIGH,CRITICAL \
+                    ${IMAGE_NAME_SERVER}
                     """
                 }
             }
         }
 
-        stage('Scan MySQL Image') {
+        stage('Scan Client Image') {
             steps {
                 script {
-                    // Scan de l'image MySQL avec Trivy
                     sh """
-                        docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                        aquasec/trivy:latest image --exit-code 0 --severity LOW,MEDIUM,HIGH,CRITICAL \
-                        ${MYSQL_IMAGE}
+                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                    aquasec/trivy:latest image --exit-code 0 --severity LOW,MEDIUM,HIGH,CRITICAL \
+                    ${IMAGE_NAME_CLIENT}
                     """
                 }
             }
@@ -65,28 +65,17 @@ pipeline {
         stage('Push Images to Docker Hub') {
             steps {
                 script {
-                    // Pousser l'image de l'application et de MySQL sur Docker Hub
                     docker.withRegistry('', "${DOCKERHUB_CREDENTIALS}") {
-                        dockerImage.push("${IMAGE_NAME}:latest")
-                        dockerImageMySQL.push("${MYSQL_IMAGE}:latest")
+                        dockerImageServer.push()
+                        dockerImageClient.push()
                     }
                 }
             }
         }
-
-        stage('Deploy Docker Compose') {
-            steps {
-                script {
-                    // Déployer le stack Docker Compose
-                    sh 'docker-compose -f docker-compose.yml up -d'
-                }
-            }
-        }
     }
-
     post {
         success {
-            echo 'Le pipeline a été exécuté avec succès.'
+            echo 'Le pipeline s\'est exécuté avec succès.'
         }
         failure {
             echo 'Le pipeline a échoué.'
