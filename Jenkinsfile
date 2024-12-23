@@ -9,30 +9,51 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo "Démarrage de l'étape de Checkout"
-                git branch: 'master',
-                    url: 'git@github.com:nouhamorj/SpringBootProject.git',
-                    credentialsId: 'github-jenkins' // ID des credentials GitHub
-                echo "Fin de l'étape de Checkout"
+                script {
+                    try {
+                        // Vérification des logs de checkout
+                        git branch: 'master',
+                            url: 'git@github.com:nouhamorj/SpringBootProject.git',
+                            credentialsId: 'github-jenkins' // ID des credentials GitHub
+                        echo "Fin de l'étape de Checkout"
+                    } catch (Exception e) {
+                        echo "Erreur lors du checkout : ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
         }
         stage('Build Docker Image') {
             steps {
                 echo "Démarrage de la construction de l'image Docker"
                 script {
-                    dockerImage = docker.build("nouhamorj/springboot-project") // Nom de l'image Docker
+                    try {
+                        dockerImage = docker.build("nouhamorj/springboot-project") // Nom de l'image Docker
+                        echo "Image Docker construite avec succès"
+                    } catch (Exception e) {
+                        echo "Erreur lors de la construction de l'image Docker : ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
                 }
-                echo "Image Docker construite avec succès"
             }
         }
         stage('Push Docker Image') {
             steps {
                 echo "Démarrage de l'envoi de l'image Docker à Docker Hub"
                 script {
-                    docker.withRegistry('', "${DOCKERHUB_CREDENTIALS}") {
-                        dockerImage.push() // Pousse l'image sur Docker Hub
+                    try {
+                        docker.withRegistry('', "${DOCKERHUB_CREDENTIALS}") {
+                            dockerImage.push() // Pousse l'image sur Docker Hub
+                        }
+                        echo "Image Docker envoyée avec succès"
+                    } catch (Exception e) {
+                        echo "Erreur lors de l'envoi de l'image Docker à Docker Hub : ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
                     }
                 }
-                echo "Image Docker envoyée avec succès"
             }
         }
     }
