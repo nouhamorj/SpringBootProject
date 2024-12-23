@@ -1,8 +1,8 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('nouha')
-        GITHUB_CREDENTIALS = credentials('github_ssh')
+        DOCKERHUB_CREDENTIALS = credentials('727e2456-ee77-4989-bee1-57ccd3c43101') // Docker Hub
+        GITHUB_CREDENTIALS = credentials('Github_ssh') // GitHub
     }
     stages {
         stage('Checkout') {
