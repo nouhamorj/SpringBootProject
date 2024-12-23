@@ -1,73 +1,46 @@
 pipeline {
     agent any
     triggers {
-        pollSCM('H/5 * * * *')
+        pollSCM('H/5 * * * *') // Vérification des modifications toutes les 5 minutes
     }
     environment {
         DOCKERHUB_CREDENTIALS = credentials('nouha') // Identifiants Docker Hub
-        GITHUB_CREDENTIALS = credentials('github_ssh') // Identifiants GitHub
-        IMAGE_NAME_SERVER = '[username]/mern-server'
-        IMAGE_NAME_CLIENT = '[username]/mern-client'
+        IMAGE_NAME = 'nouha/springboot-project' // Nom de l'image Docker
     }
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main',
+                git branch: 'master', // Utilisation de la branche master
                     url: 'git@github.com:nouhamorj/SpringBootProject.git',
-                    credentialsId: 'github_ssh' // Utilisation des identifiants GitHub
+                    credentialsId: 'github_ssh'
             }
         }
 
-        stage('Build Server Image') {
+        stage('Build Docker Image') {
             steps {
-                dir('server') {
-                    script {
-                        dockerImageServer = docker.build("${IMAGE_NAME_SERVER}")
-                    }
+                script {
+                    dockerImage = docker.build("${IMAGE_NAME}")
                 }
             }
         }
 
-        stage('Build Client Image') {
-            steps {
-                dir('client') {
-                    script {
-                        dockerImageClient = docker.build("${IMAGE_NAME_CLIENT}")
-                    }
-                }
-            }
-        }
-
-        stage('Scan Server Image') {
+        stage('Scan Docker Image') {
             steps {
                 script {
                     sh """
                     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy:latest image --exit-code 0 --severity LOW,MEDIUM,HIGH,CRITICAL \
-                    ${IMAGE_NAME_SERVER}
+                    aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL \
+                    ${IMAGE_NAME}
                     """
                 }
             }
         }
 
-        stage('Scan Client Image') {
-            steps {
-                script {
-                    sh """
-                    docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                    aquasec/trivy:latest image --exit-code 0 --severity LOW,MEDIUM,HIGH,CRITICAL \
-                    ${IMAGE_NAME_CLIENT}
-                    """
-                }
-            }
-        }
-
-        stage('Push Images to Docker Hub') {
+        stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
                     docker.withRegistry('', "${DOCKERHUB_CREDENTIALS}") {
-                        dockerImageServer.push()
-                        dockerImageClient.push()
+                        dockerImage.push()
                     }
                 }
             }
@@ -75,10 +48,10 @@ pipeline {
     }
     post {
         success {
-            echo 'Le pipeline s\'est exécuté avec succès.'
+            echo 'Le pipeline s\'est exécuté avec succès. L\'image Docker a été construite et poussée sur Docker Hub.'
         }
         failure {
-            echo 'Le pipeline a échoué.'
+            echo 'Le pipeline a échoué. Veuillez vérifier les logs pour plus de détails.'
         }
     }
 }
