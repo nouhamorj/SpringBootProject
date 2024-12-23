@@ -1,8 +1,8 @@
 pipeline {
     agent any
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('727e2456-ee77-4989-bee1-57ccd3c43101') // Docker Hub
-        GITHUB_CREDENTIALS = credentials('Github_ssh') // GitHub
+        DOCKERHUB_CREDENTIALS = credentials('nouha') // Docker Hub
+        GITHUB_CREDENTIALS = credentials('727e2456-ee77-4989-bee1-57ccd3c43101') // GitHub
     }
     stages {
         stage('Checkout') {
@@ -10,7 +10,7 @@ pipeline {
                 echo "Démarrage de l'étape de Checkout"
                 git branch: 'master',
                     url: 'git@github.com:nouhamorj/SpringBootProject.git',
-                    credentialsId: 'github_ssh'
+                    credentialsId: '727e2456-ee77-4989-bee1-57ccd3c43101'
                 echo "Fin de l'étape de Checkout"
             }
         }
