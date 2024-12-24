@@ -9,7 +9,7 @@ pipeline {
                     branches: [[name: '*/master']],
                     userRemoteConfigs: [[
                         url: 'git@github.com:nouhamorj/SpringBootProject.git',
-                        credentialsId: 'github-ssh-key'
+                        credentialsId: 'Jenkins Key'
                     ]]
                 ])
             }
