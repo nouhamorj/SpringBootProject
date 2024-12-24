@@ -1,109 +1,95 @@
 pipeline {
     agent any
+    environment {
+        // L'image Docker de votre application Spring Boot
+        DOCKER_IMAGE_APP = 'springbootproject-master-app'
+        DOCKER_TAG_APP = 'latest'  // Vous pouvez utiliser un tag spécifique ou lié à un commit Git
 
+        // L'image Docker pour MySQL
+        DOCKER_IMAGE_DB = 'mysql:5.7'  // Utiliser la version que vous préférez
+        DOCKER_TAG_DB = 'latest'
+    }
     stages {
-        stage('Check Docker Compose') {
-            steps {
-                script {
-                    // Check platform type and handle accordingly
-                    if (isUnix()) {
-                        echo 'Checking Docker Compose version (Linux)...'
-                        def dockerComposeVersion = sh(script: 'docker-compose --version', returnStatus: true, returnStdout: true).trim()
-                        echo "Docker Compose version: ${dockerComposeVersion}"
-
-                        if (dockerComposeVersion == '') {
-                            echo 'Docker Compose not found, installing...'
-                        } else {
-                            echo 'Docker Compose is already installed.'
-                        }
-                    } else {
-                        echo 'Checking Docker Compose version (Windows)...'
-                        def dockerComposeVersion = bat(script: 'docker-compose --version', returnStatus: true, returnStdout: true).trim()
-                        echo "Docker Compose version: ${dockerComposeVersion}"
-
-                        if (dockerComposeVersion == '') {
-                            echo 'Docker Compose not found, but it should be installed with Docker Desktop on Windows.'
-                        } else {
-                            echo 'Docker Compose is already installed.'
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Declarative: Checkout SCM') {
+        stage('Checkout SCM') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Install Docker Compose') {
-            when {
-                expression { isUnix() && !sh(script: 'which docker-compose', returnStatus: true) == 0 }
-            }
+        stage('Build Docker Image for App') {
             steps {
-                echo 'Installing Docker Compose...'
-                sh '''
-                    sudo curl -L https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
-                    sudo chmod +x /usr/local/bin/docker-compose
-                '''
+                script {
+                    // Construire l'image Docker pour l'application Spring Boot
+                    sh 'docker build -t $DOCKER_IMAGE_APP:$DOCKER_TAG_APP .'
+                }
             }
         }
 
-        stage('Checkout Code') {
+        stage('Build Docker Image for MySQL') {
             steps {
-                echo 'Cloning the repository...'
-                git url: 'https://github.com/nouhamorj/SpringBootProject.git', branch: 'master', credentialsId: 'github-pat-credentials'
+                script {
+                    // Construire l'image Docker pour MySQL (si vous avez un Dockerfile personnalisé pour MySQL)
+                    sh 'docker build -t $DOCKER_IMAGE_DB:$DOCKER_TAG_DB ./path/to/mysql/Dockerfile'
+                }
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Run Docker Containers') {
             steps {
-                echo 'Building Docker images using Docker Compose...'
-                sh 'docker-compose -v'  // Verify docker-compose version
-                sh 'docker-compose build'  // Build images
-            }
-        }
+                script {
+                    // Lancer le container pour l'application Spring Boot
+                    sh 'docker run -d -p 8080:8080 --name app-container $DOCKER_IMAGE_APP:$DOCKER_TAG_APP'
 
-        stage('Run Services') {
-            steps {
-                echo 'Starting Docker Compose services...'
-                sh 'docker-compose up -d'  // Run services in detached mode
+                    // Lancer le container MySQL
+                    sh 'docker run -d -p 3307:3306 --name db-container $DOCKER_IMAGE_DB:$DOCKER_TAG_DB'
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                echo 'Running tests...'
-                // Add your test steps here
+                script {
+                    // Exécuter les tests dans le container de l'application
+                    sh 'docker exec -t app-container ./mvnw test'
+                }
             }
         }
 
-        stage('Scan Vulnerabilities') {
+        stage('Push Docker Images') {
             steps {
-                echo 'Scanning vulnerabilities...'
-                // Add your vulnerability scanning steps here
+                script {
+                    // Pousser l'image de l'application sur Docker Hub
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
+                        sh 'docker push $DOCKER_IMAGE_APP:$DOCKER_TAG_APP'
+
+                        // Pousser l'image de la base de données sur Docker Hub
+                        sh 'docker push $DOCKER_IMAGE_DB:$DOCKER_TAG_DB'
+                    }
+                }
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Cleanup') {
             steps {
-                echo 'Pushing Docker images to Docker Hub...'
-                // Add your Docker Hub push steps here
-            }
-        }
-
-        stage('Declarative: Post Actions') {
-            steps {
-                echo 'Stopping and cleaning up Docker Compose services...'
-                sh 'docker-compose down --volumes'  // Clean up after the build
+                script {
+                    // Nettoyer les containers et images après exécution
+                    sh 'docker rm -f $(docker ps -aq)'
+                    sh 'docker rmi -f $DOCKER_IMAGE_APP:$DOCKER_TAG_APP $DOCKER_IMAGE_DB:$DOCKER_TAG_DB'
+                }
             }
         }
     }
 
     post {
+        always {
+            echo 'Pipeline completed.'
+        }
+        success {
+            echo 'Pipeline finished successfully.'
+        }
         failure {
-            echo 'Pipeline failed!'
+            echo 'Pipeline failed.'
         }
     }
 }
