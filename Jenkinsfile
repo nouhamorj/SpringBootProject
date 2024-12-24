@@ -4,20 +4,24 @@ pipeline {
     environment {
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
         APP_SERVICE_NAME = 'app'
-        DOCKER_IMAGE = 'nom-utilisateur/nom-image:latest' // Remplacez par votre image Docker
+        DOCKER_IMAGE = 'springbootproject-master-app:latest' // Remplacez par votre image Docker
         DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials' // Nom des identifiants Jenkins pour Docker Hub
+        GITHUB_CREDENTIALS = 'github-pat-credentials' // Nom des identifiants Jenkins pour GitHub (avec PAT ou SSH)
     }
 
     stages {
         stage('Checkout Code') {
             steps {
                 echo 'Cloning the repository...'
-                git branch: 'main', url: 'https://github.com/votre-repo/votre-projet.git' // Remplacez par l'URL de votre dépôt
+                // Utilisation du token d'accès personnel (PAT) pour l'authentification
+                git credentialsId: "$GITHUB_CREDENTIALS", branch: 'master', url: 'https://github.com/nouhamorj/SpringBootProject.git'
             }
         }
         stage('Build Docker Images') {
             steps {
                 echo 'Building Docker images using Docker Compose...'
+                // Vérification de l'installation de Docker Compose
+                sh 'docker-compose -v || { echo "Docker Compose not installed."; exit 1; }'
                 sh 'docker-compose -f $DOCKER_COMPOSE_FILE build'
             }
         }
@@ -30,13 +34,14 @@ pipeline {
         stage('Run Tests') {
             steps {
                 echo 'Running application tests...'
-                // Ajoutez ici votre commande pour exécuter des tests, si applicable
+                // Exécution des tests (vérification que l'application est accessible)
                 sh 'curl -f http://localhost:8080 || exit 1'
             }
         }
         stage('Scan Vulnerabilities') {
             steps {
                 echo 'Scanning for vulnerabilities with Trivy...'
+                // Scanner les vulnérabilités de l'image Docker
                 sh '''
                 trivy image $DOCKER_IMAGE > trivy-report.txt || true
                 echo "Vulnerability report saved to trivy-report.txt."
@@ -47,6 +52,7 @@ pipeline {
             steps {
                 echo 'Pushing Docker image to Docker Hub...'
                 script {
+                    // Pousser l'image Docker sur Docker Hub
                     docker.withRegistry('https://index.docker.io/v1/', "$DOCKER_REGISTRY_CREDENTIALS") {
                         sh 'docker push $DOCKER_IMAGE'
                     }
@@ -58,6 +64,7 @@ pipeline {
     post {
         always {
             echo 'Stopping and cleaning up Docker Compose services...'
+            // Nettoyage des services Docker Compose
             sh 'docker-compose -f $DOCKER_COMPOSE_FILE down --volumes || true'
         }
         success {
