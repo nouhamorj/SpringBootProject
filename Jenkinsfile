@@ -1,8 +1,6 @@
 pipeline {
     agent any
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -16,33 +14,38 @@ pipeline {
                 ])
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t nouhamorj/springboot-project:latest .'
+                    def dockerImage = docker.build("nouhamorj/springboot-project:latest")
                 }
             }
         }
+
         stage('Push Docker Image') {
             steps {
                 script {
                     withCredentials([usernamePassword(
                         credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKERHUB_PASSWORD'
                     )]) {
-                        sh '''
-                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        sh """
+                            echo \${DOCKERHUB_PASSWORD} | docker login -u \${DOCKERHUB_USERNAME} --password-stdin
                             docker push nouhamorj/springboot-project:latest
-                        '''
+                        """
                     }
                 }
             }
         }
     }
+
     post {
         always {
-            sh 'docker logout || true'
+            script {
+                sh 'docker logout || true'
+            }
         }
         success {
             echo 'Pipeline terminé avec succès.'
