@@ -1,40 +1,54 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        APP_SERVICE_NAME = 'app'
+        DOCKER_IMAGE = 'nom-utilisateur/nom-image:latest' // Remplacez par votre image Docker
+        DOCKER_REGISTRY_CREDENTIALS = 'docker-hub-credentials' // Nom des identifiants Jenkins pour Docker Hub
+    }
+
     stages {
-        stage('Checkout') {
+        stage('Checkout Code') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/master']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/nouhamorj/SpringBootProject.git',
-                        credentialsId: 'springdeploy-user'
-                    ]]
-                ])
+                echo 'Cloning the repository...'
+                git branch: 'main', url: 'https://github.com/votre-repo/votre-projet.git' // Remplacez par l'URL de votre dépôt
             }
         }
-
-        stage('Build Docker Image') {
+        stage('Build Docker Images') {
             steps {
-                script {
-                    def dockerImage = docker.build("nouhamorj/springboot-project:latest")
-                }
+                echo 'Building Docker images using Docker Compose...'
+                sh 'docker-compose -f $DOCKER_COMPOSE_FILE build'
             }
         }
-
-        stage('Push Docker Image') {
+        stage('Run Services') {
             steps {
+                echo 'Starting services for testing...'
+                sh 'docker-compose -f $DOCKER_COMPOSE_FILE up -d'
+            }
+        }
+        stage('Run Tests') {
+            steps {
+                echo 'Running application tests...'
+                // Ajoutez ici votre commande pour exécuter des tests, si applicable
+                sh 'curl -f http://localhost:8080 || exit 1'
+            }
+        }
+        stage('Scan Vulnerabilities') {
+            steps {
+                echo 'Scanning for vulnerabilities with Trivy...'
+                sh '''
+                trivy image $DOCKER_IMAGE > trivy-report.txt || true
+                echo "Vulnerability report saved to trivy-report.txt."
+                '''
+            }
+        }
+        stage('Push to Docker Hub') {
+            steps {
+                echo 'Pushing Docker image to Docker Hub...'
                 script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKERHUB_USERNAME',
-                        passwordVariable: 'DOCKERHUB_PASSWORD'
-                    )]) {
-                        sh """
-                            echo \${DOCKERHUB_PASSWORD} | docker login -u \${DOCKERHUB_USERNAME} --password-stdin
-                            docker push nouhamorj/springboot-project:latest
-                        """
+                    docker.withRegistry('https://index.docker.io/v1/', "$DOCKER_REGISTRY_CREDENTIALS") {
+                        sh 'docker push $DOCKER_IMAGE'
                     }
                 }
             }
@@ -43,15 +57,14 @@ pipeline {
 
     post {
         always {
-            script {
-                sh 'docker logout || true'
-            }
+            echo 'Stopping and cleaning up Docker Compose services...'
+            sh 'docker-compose -f $DOCKER_COMPOSE_FILE down --volumes || true'
         }
         success {
-            echo 'Pipeline terminé avec succès.'
+            echo 'Pipeline completed successfully!'
         }
         failure {
-            echo 'Le pipeline a échoué. Veuillez vérifier les logs pour plus de détails.'
+            echo 'Pipeline failed!'
         }
     }
 }
