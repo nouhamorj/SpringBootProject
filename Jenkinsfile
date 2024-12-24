@@ -3,22 +3,34 @@ pipeline {
 
     stages {
         stage('Check Docker Compose') {
-                    steps {
-                        script {
-                            // Vérifier si Docker Compose est installé
-                            echo 'Checking Docker Compose version...'
-                            def dockerComposeVersion = bat(script: 'docker-compose --version', returnStdout: true).trim()
-                            echo "Docker Compose version: ${dockerComposeVersion}"
+            steps {
+                script {
+                    // Check platform type and handle accordingly
+                    if (isUnix()) {
+                        echo 'Checking Docker Compose version (Linux)...'
+                        def dockerComposeVersion = sh(script: 'docker-compose --version', returnStdout: true).trim()
+                        echo "Docker Compose version: ${dockerComposeVersion}"
 
-                            // Si Docker Compose n'est pas trouvé, installer (mais normalement il est déjà installé sur Windows)
-                            if (!dockerComposeVersion) {
-                                echo 'Docker Compose not found, but it should be installed with Docker Desktop on Windows.'
-                            } else {
-                                echo 'Docker Compose is already installed.'
-                            }
+                        if (!dockerComposeVersion) {
+                            echo 'Docker Compose not found, installing...'
+                        } else {
+                            echo 'Docker Compose is already installed.'
+                        }
+                    } else {
+                        echo 'Checking Docker Compose version (Windows)...'
+                        def dockerComposeVersion = bat(script: 'docker-compose --version', returnStdout: true).trim()
+                        echo "Docker Compose version: ${dockerComposeVersion}"
+
+                        if (!dockerComposeVersion) {
+                            echo 'Docker Compose not found, but it should be installed with Docker Desktop on Windows.'
+                        } else {
+                            echo 'Docker Compose is already installed.'
                         }
                     }
+                }
+            }
         }
+
         stage('Declarative: Checkout SCM') {
             steps {
                 checkout scm
@@ -26,12 +38,13 @@ pipeline {
         }
 
         stage('Install Docker Compose') {
+            when {
+                expression { isUnix() }  // Ensure this only runs on Unix-like systems
+            }
             steps {
                 script {
-                    // Check if Docker Compose is installed
                     def dockerComposeInstalled = sh(script: 'which docker-compose', returnStatus: true)
                     if (dockerComposeInstalled != 0) {
-                        // Install Docker Compose with sudo
                         echo 'Installing Docker Compose...'
                         sh '''
                             sudo curl -L https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
