@@ -8,20 +8,20 @@ pipeline {
                     // Check platform type and handle accordingly
                     if (isUnix()) {
                         echo 'Checking Docker Compose version (Linux)...'
-                        def dockerComposeVersion = sh(script: 'docker-compose --version', returnStdout: true).trim()
+                        def dockerComposeVersion = sh(script: 'docker-compose --version', returnStatus: true, returnStdout: true).trim()
                         echo "Docker Compose version: ${dockerComposeVersion}"
 
-                        if (!dockerComposeVersion) {
+                        if (dockerComposeVersion == '') {
                             echo 'Docker Compose not found, installing...'
                         } else {
                             echo 'Docker Compose is already installed.'
                         }
                     } else {
                         echo 'Checking Docker Compose version (Windows)...'
-                        def dockerComposeVersion = bat(script: 'docker-compose --version', returnStdout: true).trim()
+                        def dockerComposeVersion = bat(script: 'docker-compose --version', returnStatus: true, returnStdout: true).trim()
                         echo "Docker Compose version: ${dockerComposeVersion}"
 
-                        if (!dockerComposeVersion) {
+                        if (dockerComposeVersion == '') {
                             echo 'Docker Compose not found, but it should be installed with Docker Desktop on Windows.'
                         } else {
                             echo 'Docker Compose is already installed.'
@@ -39,21 +39,14 @@ pipeline {
 
         stage('Install Docker Compose') {
             when {
-                expression { isUnix() }  // Ensure this only runs on Unix-like systems
+                expression { isUnix() && !sh(script: 'which docker-compose', returnStatus: true) == 0 }
             }
             steps {
-                script {
-                    def dockerComposeInstalled = sh(script: 'which docker-compose', returnStatus: true)
-                    if (dockerComposeInstalled != 0) {
-                        echo 'Installing Docker Compose...'
-                        sh '''
-                            sudo curl -L https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
-                            sudo chmod +x /usr/local/bin/docker-compose
-                        '''
-                    } else {
-                        echo 'Docker Compose is already installed.'
-                    }
-                }
+                echo 'Installing Docker Compose...'
+                sh '''
+                    sudo curl -L https://github.com/docker/compose/releases/download/v2.18.1/docker-compose-Linux-x86_64 -o /usr/local/bin/docker-compose
+                    sudo chmod +x /usr/local/bin/docker-compose
+                '''
             }
         }
 
