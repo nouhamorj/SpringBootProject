@@ -15,16 +15,13 @@ pipeline {
         }
 
         stage('Build and Test') {
-            agent {
-                docker {
-                    image 'maven:3.8.4-openjdk-17'
-                    args '-v $HOME/.m2:/root/.m2'
-                }
-            }
             steps {
-                sh '''
-                    mvn clean package
-                '''
+                script {
+                    // Use Docker within the steps block, not as an agent
+                    docker.image('maven:3.8.4-openjdk-17').inside('-v $HOME/.m2:/root/.m2') {
+                        sh 'mvn clean package'
+                    }
+                }
             }
         }
 
