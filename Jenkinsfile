@@ -15,34 +15,47 @@ pipeline {
         }
 
         stage('Build Maven') {
+            agent {
+                docker {
+                    image 'maven:3.8.4-openjdk-17'
+                    reuseNode true
+                }
+            }
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh '''
+                    mvn clean package -DskipTests
+                '''
             }
         }
 
         stage('Run Tests') {
+            agent {
+                docker {
+                    image 'maven:3.8.4-openjdk-17'
+                    reuseNode true
+                }
+            }
             steps {
                 sh 'mvn test'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                    // Construction de l'image
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                    """
+
+                    // Login à DockerHub
+                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+
+                    // Push de l'image
+                    sh """
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    """
                 }
-            }
-        }
-
-        stage('Login to DockerHub') {
-            steps {
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-            }
-        }
-
-        stage('Push to DockerHub') {
-            steps {
-                sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
             }
         }
 
@@ -61,8 +74,7 @@ pipeline {
 
     post {
         always {
-            // Nettoyage
-            sh 'docker logout'
+            sh 'docker logout || true'
             cleanWs()
         }
         success {
