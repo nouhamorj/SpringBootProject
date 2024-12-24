@@ -14,33 +14,21 @@ pipeline {
             }
         }
 
-        stage('Build Maven') {
+        stage('Build and Test') {
             agent {
                 docker {
                     image 'maven:3.8.4-openjdk-17'
-                    reuseNode true
+                    args '-v $HOME/.m2:/root/.m2'
                 }
             }
             steps {
                 sh '''
-                    mvn clean package -DskipTests
+                    mvn clean package
                 '''
             }
         }
 
-        stage('Run Tests') {
-            agent {
-                docker {
-                    image 'maven:3.8.4-openjdk-17'
-                    reuseNode true
-                }
-            }
-            steps {
-                sh 'mvn test'
-            }
-        }
-
-        stage('Build and Push Docker Image') {
+        stage('Docker Build & Push') {
             steps {
                 script {
                     // Construction de l'image
@@ -49,12 +37,12 @@ pipeline {
                     """
 
                     // Login à DockerHub
-                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-
-                    // Push de l'image
-                    sh """
-                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    """
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh """
+                            echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                        """
+                    }
                 }
             }
         }
@@ -62,11 +50,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Arrêt des conteneurs existants
-                    sh 'docker-compose down || true'
-
-                    // Démarrage des nouveaux conteneurs
-                    sh 'docker-compose up -d'
+                    sh '''
+                        docker-compose down || true
+                        docker-compose up -d
+                    '''
                 }
             }
         }
@@ -74,7 +61,9 @@ pipeline {
 
     post {
         always {
-            sh 'docker logout || true'
+            script {
+                sh 'docker logout || true'
+            }
             cleanWs()
         }
         success {
