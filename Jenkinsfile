@@ -8,8 +8,8 @@ pipeline {
                     $class: 'GitSCM',
                     branches: [[name: '*/master']],
                     userRemoteConfigs: [[
-                        url: 'git@github.com:nouhamorj/SpringBootProject.git',
-                        credentialsId: 'Jenkins Key'
+                        url: 'https://github.com/nouhamorj/SpringBootProject.git',
+                        credentialsId: 'springdeploy-user'
                     ]]
                 ])
             }
