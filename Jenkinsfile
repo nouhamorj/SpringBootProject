@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'my-spring-boot-app'  // Nom de l'image Docker
         DOCKER_TAG = "latest"  // Tag de l'image
         REGISTRY = 'docker.io'  // Docker Hub ou autre registre
-        REGISTRY_CREDENTIALS = 'dockerhub-creds'  // Identifiants Docker Hub
+        REGISTRY_CREDENTIALS = 'docker-hub-credentials'  // Identifiants Docker Hub
         TRIVY_IMAGE = 'aquasec/trivy:latest'  // Image Docker pour Trivy
     }
 
@@ -13,7 +13,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // Récupérer le code source du dépôt
-                git 'https://votre-repository-url.git'
+                git 'https://github.com/nouhamorj/SpringBootProject.git'
             }
         }
 
