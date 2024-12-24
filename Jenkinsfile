@@ -2,6 +2,23 @@ pipeline {
     agent any
 
     stages {
+        stage('Check Docker Compose') {
+                    steps {
+                        script {
+                            // Vérifier si Docker Compose est installé
+                            echo 'Checking Docker Compose version...'
+                            def dockerComposeVersion = bat(script: 'docker-compose --version', returnStdout: true).trim()
+                            echo "Docker Compose version: ${dockerComposeVersion}"
+
+                            // Si Docker Compose n'est pas trouvé, installer (mais normalement il est déjà installé sur Windows)
+                            if (!dockerComposeVersion) {
+                                echo 'Docker Compose not found, but it should be installed with Docker Desktop on Windows.'
+                            } else {
+                                echo 'Docker Compose is already installed.'
+                            }
+                        }
+                    }
+        }
         stage('Declarative: Checkout SCM') {
             steps {
                 checkout scm
