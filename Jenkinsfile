@@ -1,95 +1,74 @@
 pipeline {
     agent any
+
     environment {
-        // L'image Docker de votre application Spring Boot
-        DOCKER_IMAGE_APP = 'springbootproject-master-app'
-        DOCKER_TAG_APP = 'latest'  // Vous pouvez utiliser un tag spécifique ou lié à un commit Git
-
-        // L'image Docker pour MySQL
-        DOCKER_IMAGE_DB = 'mysql:5.7'  // Utiliser la version que vous préférez
-        DOCKER_TAG_DB = 'latest'
+        DOCKER_IMAGE = 'my-spring-boot-app'  // Nom de l'image Docker
+        DOCKER_TAG = "latest"  // Tag de l'image
+        REGISTRY = 'docker.io'  // Docker Hub ou autre registre
+        REGISTRY_CREDENTIALS = 'dockerhub-creds'  // Identifiants Docker Hub
+        TRIVY_IMAGE = 'aquasec/trivy:latest'  // Image Docker pour Trivy
     }
+
     stages {
-        stage('Checkout SCM') {
+        stage('Checkout') {
             steps {
-                checkout scm
+                // Récupérer le code source du dépôt
+                git 'https://votre-repository-url.git'
             }
         }
 
-        stage('Build Docker Image for App') {
+        stage('Build Docker Image') {
             steps {
                 script {
-                    // Construire l'image Docker pour l'application Spring Boot
-                    sh 'docker build -t $DOCKER_IMAGE_APP:$DOCKER_TAG_APP .'
+                    // Construire l'image Docker à partir du Dockerfile
+                    sh 'docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .'
                 }
             }
         }
 
-        stage('Build Docker Image for MySQL') {
+        stage('Scan for Vulnerabilities with Trivy') {
             steps {
                 script {
-                    // Construire l'image Docker pour MySQL (si vous avez un Dockerfile personnalisé pour MySQL)
-                    sh 'docker build -t $DOCKER_IMAGE_DB:$DOCKER_TAG_DB ./path/to/mysql/Dockerfile'
+                    // Effectuer un scan de vulnérabilités sur l'image Docker construite avec Trivy
+                    sh """
+                    docker run --rm ${TRIVY_IMAGE} --quiet --severity HIGH,CRITICAL --exit-code 1 --no-progress ${DOCKER_IMAGE}:${DOCKER_TAG}
+                    """
                 }
             }
         }
 
-        stage('Run Docker Containers') {
-            steps {
-                script {
-                    // Lancer le container pour l'application Spring Boot
-                    sh 'docker run -d -p 8080:8080 --name app-container $DOCKER_IMAGE_APP:$DOCKER_TAG_APP'
-
-                    // Lancer le container MySQL
-                    sh 'docker run -d -p 3307:3306 --name db-container $DOCKER_IMAGE_DB:$DOCKER_TAG_DB'
-                }
+        stage('Push Docker Image') {
+            when {
+                branch 'main'  // Pousser l'image uniquement si on est sur la branche 'main'
             }
-        }
-
-        stage('Run Tests') {
             steps {
                 script {
-                    // Exécuter les tests dans le container de l'application
-                    sh 'docker exec -t app-container ./mvnw test'
-                }
-            }
-        }
-
-        stage('Push Docker Images') {
-            steps {
-                script {
-                    // Pousser l'image de l'application sur Docker Hub
-                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASSWORD')]) {
-                        sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USER --password-stdin'
-                        sh 'docker push $DOCKER_IMAGE_APP:$DOCKER_TAG_APP'
-
-                        // Pousser l'image de la base de données sur Docker Hub
-                        sh 'docker push $DOCKER_IMAGE_DB:$DOCKER_TAG_DB'
+                    // Se connecter au registre Docker
+                    withCredentials([usernamePassword(credentialsId: REGISTRY_CREDENTIALS, usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin ${REGISTRY}"
                     }
+
+                    // Taguer l'image avant de la pousser
+                    sh "docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
+
+                    // Pousser l'image vers Docker Hub
+                    sh "docker push ${REGISTRY}/${DOCKER_IMAGE}:${DOCKER_TAG}"
                 }
             }
         }
 
         stage('Cleanup') {
             steps {
-                script {
-                    // Nettoyer les containers et images après exécution
-                    sh 'docker rm -f $(docker ps -aq)'
-                    sh 'docker rmi -f $DOCKER_IMAGE_APP:$DOCKER_TAG_APP $DOCKER_IMAGE_DB:$DOCKER_TAG_DB'
-                }
+                // Nettoyer les ressources Docker (images et conteneurs)
+                sh 'docker system prune -f'
             }
         }
     }
 
     post {
         always {
-            echo 'Pipeline completed.'
-        }
-        success {
-            echo 'Pipeline finished successfully.'
-        }
-        failure {
-            echo 'Pipeline failed.'
+            // Toujours arrêter les services Docker, même en cas d'erreur
+            sh 'docker-compose down || true'
         }
     }
 }
