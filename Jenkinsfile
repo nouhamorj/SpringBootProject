@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Cloner le dépôt') {
             steps {
-                git credentialsId: "${GIT_CREDENTIALS}", url: 'https://github.com/ton-compte/ton-repo.git', branch: 'main'
+                git branch: 'main', url: 'https://github.com/nouhamorj/SpringBootProject.git', credentialsId: 'git' 
             }
         }
 
