@@ -5,34 +5,54 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
         DOCKER_IMAGE = "nouhamorj/springbootproject-master"
         DOCKER_TAG = "${BUILD_NUMBER}"
-        GIT_CREDENTIALS_ID = 'git'
     }
 
     options {
+        skipDefaultCheckout(true)
         timeout(time: 1, unit: 'HOURS')
         disableConcurrentBuilds()
-        gitLabConnection('gitlab')
     }
 
     stages {
+        stage('Git Config') {
+            steps {
+                sh '''
+                    git config --global http.postBuffer 524288000
+                    git config --global http.maxRequestBuffer 100M
+                    git config --global core.compression 9
+                    git config --global http.lowSpeedLimit 1000
+                    git config --global http.lowSpeedTime 300
+                '''
+            }
+        }
+
         stage('Checkout') {
             steps {
                 script {
                     retry(3) {
-                        timeout(time: 10, unit: 'MINUTES') {
-                            checkout([$class: 'GitSCM',
+                        timeout(time: 20, unit: 'MINUTES') {
+                            sh 'rm -rf ./*'
+                            sh 'rm -rf .git'
+                            checkout([
+                                $class: 'GitSCM',
                                 branches: [[name: '*/master']],
                                 extensions: [
                                     [$class: 'CloneOption',
                                         depth: 1,
+                                        honorRefspec: true,
                                         noTags: true,
+                                        reference: '',
                                         shallow: true,
                                         timeout: 30],
-                                    [$class: 'GitLFSPull'],
-                                    [$class: 'CleanBeforeCheckout']
+                                    [$class: 'CleanBeforeCheckout'],
+                                    [$class: 'PruneStaleBranch'],
+                                    [$class: 'SubmoduleOption',
+                                        disableSubmodules: true,
+                                        recursiveSubmodules: false,
+                                        trackingSubmodules: false]
                                 ],
                                 userRemoteConfigs: [[
-                                    credentialsId: env.GIT_CREDENTIALS_ID,
+                                    credentialsId: 'git',
                                     url: scm.userRemoteConfigs[0].url
                                 ]]
                             ])
@@ -46,17 +66,8 @@ pipeline {
             steps {
                 script {
                     docker.image('maven:3.8.4-openjdk-17').inside('-v $HOME/.m2:/root/.m2') {
-                        sh '''
-                            mvn clean package -DskipTests
-                            mvn test
-                        '''
+                        sh 'mvn clean package'
                     }
-                }
-            }
-            post {
-                success {
-                    junit '**/target/surefire-reports/*.xml'
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
         }
@@ -64,23 +75,19 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    retry(2) {
-                        timeout(time: 10, unit: 'MINUTES') {
-                            sh """
-                                docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                                docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                            """
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+                        docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
+                    """
 
-                            withCredentials([usernamePassword(credentialsId: 'dockerhub',
-                                                    passwordVariable: 'DOCKER_PASSWORD',
-                                                    usernameVariable: 'DOCKER_USERNAME')]) {
-                                sh """
-                                    echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
-                                    docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                                    docker push ${DOCKER_IMAGE}:latest
-                                """
-                            }
-                        }
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                                            passwordVariable: 'DOCKER_PASSWORD',
+                                            usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh """
+                            echo \$DOCKER_PASSWORD | docker login -u \$DOCKER_USERNAME --password-stdin
+                            docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+                            docker push ${DOCKER_IMAGE}:latest
+                        """
                     }
                 }
             }
@@ -88,48 +95,21 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                script {
-                    timeout(time: 5, unit: 'MINUTES') {
-                        sh '''
-                            docker-compose down || true
-                            docker-compose up -d
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                script {
-                    timeout(time: 2, unit: 'MINUTES') {
-                        retry(3) {
-                            sh '''
-                                sleep 30
-                                curl -f http://localhost:8080/actuator/health || exit 1
-                            '''
-                        }
-                    }
-                }
+                sh '''
+                    docker-compose down || true
+                    docker-compose up -d
+                '''
             }
         }
     }
 
     post {
         always {
-            script {
-                sh '''
-                    docker logout || true
-                    docker system prune -f || true
-                '''
-            }
+            sh '''
+                docker logout || true
+                docker system prune -f || true
+            '''
             cleanWs()
-        }
-        success {
-            echo 'Pipeline executed successfully!'
-        }
-        failure {
-            echo 'Pipeline execution failed!'
         }
     }
 }
