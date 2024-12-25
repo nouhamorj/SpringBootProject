@@ -14,7 +14,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: "${params.GIT_BRANCH}"
+                git url: 'https://github.com/nouhamorj/SpringBootProject', branch: "${params.GIT_BRANCH}"
             }
         }
 
