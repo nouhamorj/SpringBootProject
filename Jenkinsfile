@@ -1,69 +1,67 @@
 pipeline {
     agent any
 
-    parameters {
-        string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch à construire')
-        string(name: 'DOCKERHUB_REPO', defaultValue: 'nouhamorj', description: 'Nom du dépôt Docker')
-        string(name: 'DOCKER_IMAGE_NAME', defaultValue: 'springbootproject', description: 'Nom de l'image Docker')
-    }
-
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub') // Identifiant des credentials DockerHub
+        GIT_CREDENTIALS = credentials('git') // Identifiant des credentials GitHub
+        IMAGE_NAME = "nouhamorj/mon-spring-boot-app" // Remplace par le nom de ton image Docker
     }
 
     stages {
-        stage('Checkout') {
+        stage('Cloner le dépôt') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]],
-                          userRemoteConfigs: [[url: 'https://github.com/nouhamorj/SpringBootProject',
-                                               credentialsId: 'git']]])
-            }
-        }
-        
-        stage('Cleanup') {
-            steps {
-                cleanWs()
+                git credentialsId: "${GIT_CREDENTIALS}", url: 'https://github.com/ton-compte/ton-repo.git', branch: 'main'
             }
         }
 
-        stage('Build') {
-            steps {
-                sh 'mvn clean package'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-
-        stage('Docker Build and Push') {
+        stage('Construire et tester l’application') {
             steps {
                 script {
-                    def dockerImageName = "${params.DOCKERHUB_REPO}/${params.DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    sh "docker build -t $dockerImageName ."
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub',
-                                            passwordVariable: 'DOCKER_PASSWORD',
-                                            usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh "docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD"
-                        sh "docker push $dockerImageName"
-                    }
+                    sh './mvnw clean package -DskipTests' // Construire le projet Spring Boot
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Construire l’image Docker') {
             steps {
-                // À adapter en fonction de votre environnement de déploiement
-                sh 'docker-compose up -d'
+                script {
+                    sh "docker build -t ${IMAGE_NAME}:latest ."
+                }
+            }
+        }
+
+        stage('Pousser l’image sur DockerHub') {
+            steps {
+                script {
+                    sh """
+                        echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
+                        docker push ${IMAGE_NAME}:latest
+                    """
+                }
+            }
+        }
+
+        stage('Déployer avec Docker Compose') {
+            steps {
+                script {
+                    sh """
+                        docker-compose down || true
+                        docker-compose up -d
+                    """
+                }
             }
         }
     }
 
     post {
         always {
-            cleanWs()
+            echo 'Pipeline terminé.'
+        }
+        success {
+            echo 'Pipeline exécuté avec succès.'
+        }
+        failure {
+            echo 'Le pipeline a échoué.'
         }
     }
 }
