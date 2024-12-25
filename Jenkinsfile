@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git credentialsId: 'git',
+                git credentialsId: 'PAT',
                     url: 'https://github.com/nouhamorj/SpringBootProject.git',
                     branch: 'master'
             }
