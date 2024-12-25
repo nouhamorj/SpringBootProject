@@ -14,7 +14,15 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/nouhamorj/SpringBootProject', branch: "${params.GIT_BRANCH}"
+                checkout([$class: 'GitSCM', branches: [[name: "${params.GIT_BRANCH}"]],
+                          userRemoteConfigs: [[url: 'https://github.com/nouhamorj/SpringBootProject',
+                                               credentialsId: 'git']]])
+            }
+        }
+        
+        stage('Cleanup') {
+            steps {
+                cleanWs()
             }
         }
 
