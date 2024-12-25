@@ -4,7 +4,7 @@ pipeline {
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub') // Identifiant des credentials DockerHub
         GIT_CREDENTIALS = credentials('git') // Identifiant des credentials GitHub
-        IMAGE_NAME = "nouhamorj/mon-spring-boot-app" // Remplace par le nom de ton image Docker
+        IMAGE_NAME = "nouhamorj/springbootproject-master-app" // Remplace par le nom de ton image Docker
     }
 
     stages {
