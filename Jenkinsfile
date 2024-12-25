@@ -2,52 +2,77 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub') // Identifiant des credentials DockerHub
-        GIT_CREDENTIALS = credentials('git') // Identifiant des credentials GitHub
-        IMAGE_NAME = "nouhamorj/springbootproject-master-app" // Remplace par le nom de ton image Docker
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+        GIT_CREDENTIALS = credentials('git')
+        DOCKER_IMAGE = 'nouhamorj/spring-boot-app'
+        DOCKER_TAG = "${BUILD_NUMBER}"
+        LATEST_TAG = 'latest'
+        // Configuration MySQL
+        MYSQL_DATABASE = 'formation'
+        MYSQL_ROOT_PASSWORD = ''
     }
 
     stages {
-        stage('Cloner le dépôt') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/nouhamorj/SpringBootProject.git', credentialsId: 'git' 
+                git credentialsId: 'git',
+                    url: 'https://github.com/nouhamorj/SpringBootProject.git',
+                    branch: 'master'
             }
         }
 
-        stage('Construire et tester l’application') {
+        stage('Tests') {
             steps {
                 script {
-                    sh './mvnw clean package -DskipTests' // Construire le projet Spring Boot
+                    // Démarrer MySQL pour les tests
+                    sh 'docker-compose up -d mysqldb'
+                    // Attendre que MySQL soit prêt
+                    sh '''
+                        timeout=60
+                        while ! docker-compose exec -T mysqldb mysqladmin ping -h localhost --silent; do
+                            sleep 1
+                            timeout=$((timeout - 1))
+                            if [ $timeout -le 0 ]; then
+                                echo "Timeout waiting for MySQL"
+                                exit 1
+                            fi
+                        done
+                    '''
+                    // Exécuter les tests
+                    sh 'mvn test'
                 }
             }
         }
 
-        stage('Construire l’image Docker') {
+        stage('Build and Push Docker Image') {
             steps {
                 script {
-                    sh "docker build -t ${IMAGE_NAME}:latest ."
+                    // Login Docker Hub
+                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+
+                    // Build avec les deux tags
+                    sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -t ${DOCKER_IMAGE}:${LATEST_TAG} ."
+
+                    // Push les deux tags
+                    sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
+                    sh "docker push ${DOCKER_IMAGE}:${LATEST_TAG}"
                 }
             }
         }
 
-        stage('Pousser l’image sur DockerHub') {
+        stage('Deploy') {
             steps {
                 script {
+                    // Mise à jour du tag dans docker-compose
                     sh """
-                        echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
-                        docker push ${IMAGE_NAME}:latest
+                        sed -i 's|build:|image: ${DOCKER_IMAGE}:${DOCKER_TAG}|g' docker-compose.yml
+                        sed -i '/dockerfile:/d' docker-compose.yml
+                        sed -i '/context:/d' docker-compose.yml
                     """
-                }
-            }
-        }
 
-        stage('Déployer avec Docker Compose') {
-            steps {
-                script {
-                    sh """
-                        docker-compose down || true
-                        docker-compose up -d
-                    """
+                    // Déploiement avec docker-compose
+                    sh 'docker-compose down || true'
+                    sh 'docker-compose up -d'
                 }
             }
         }
@@ -55,13 +80,12 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline terminé.'
-        }
-        success {
-            echo 'Pipeline exécuté avec succès.'
-        }
-        failure {
-            echo 'Le pipeline a échoué.'
+            script {
+                // Nettoyage
+                sh 'docker-compose down || true'
+                sh 'docker logout'
+                cleanWs()
+            }
         }
     }
 }
