@@ -13,13 +13,9 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/master']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/nouhamorj/SpringBootProject.git',
-                        credentialsId: 'jekins-up'
-                    ]]
-                ])
+                git branch: 'master',
+                    credentialsId: 'jekins-up',
+                    url: 'https://github.com/nouhamorj/SpringBootProject.git'
             }
         }
 
