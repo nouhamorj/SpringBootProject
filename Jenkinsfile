@@ -13,6 +13,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                sh 'git init'
+                sh 'git clean -fdx'
                 git branch: 'master',
                     credentialsId: 'jekins-up',
                     url: 'https://github.com/nouhamorj/SpringBootProject.git'
