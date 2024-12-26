@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-        DOCKER_IMAGE = 'nouhamorj/spring-boot-app'
+        DOCKER_IMAGE = 'springbootproject-master-app'
         DOCKER_TAG = "${BUILD_NUMBER}"
         LATEST_TAG = 'latest'
         // Configuration MySQL
