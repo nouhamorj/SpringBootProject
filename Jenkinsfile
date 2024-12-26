@@ -3,11 +3,9 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
-        GIT_CREDENTIALS = credentials('git')
         DOCKER_IMAGE = 'nouhamorj/spring-boot-app'
         DOCKER_TAG = "${BUILD_NUMBER}"
         LATEST_TAG = 'latest'
-        // Configuration MySQL
         MYSQL_DATABASE = 'formation'
         MYSQL_ROOT_PASSWORD = ''
     }
@@ -15,18 +13,20 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git credentialsId: 'jekins-up',
-                    url: 'https://github.com/nouhamorj/SpringBootProject.git',
-                    branch: 'master'
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/master']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/nouhamorj/SpringBootProject.git',
+                        credentialsId: 'jekins-up'
+                    ]]
+                ])
             }
         }
 
         stage('Tests') {
             steps {
                 script {
-                    // Démarrer MySQL pour les tests
                     sh 'docker-compose up -d mysqldb'
-                    // Attendre que MySQL soit prêt
                     sh '''
                         timeout=60
                         while ! docker-compose exec -T mysqldb mysqladmin ping -h localhost --silent; do
@@ -38,7 +38,6 @@ pipeline {
                             fi
                         done
                     '''
-                    // Exécuter les tests
                     sh 'mvn test'
                 }
             }
@@ -47,13 +46,8 @@ pipeline {
         stage('Build and Push Docker Image') {
             steps {
                 script {
-                    // Login Docker Hub
                     sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
-
-                    // Build avec les deux tags
                     sh "docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} -t ${DOCKER_IMAGE}:${LATEST_TAG} ."
-
-                    // Push les deux tags
                     sh "docker push ${DOCKER_IMAGE}:${DOCKER_TAG}"
                     sh "docker push ${DOCKER_IMAGE}:${LATEST_TAG}"
                 }
@@ -63,14 +57,11 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    // Mise à jour du tag dans docker-compose
                     sh """
                         sed -i 's|build:|image: ${DOCKER_IMAGE}:${DOCKER_TAG}|g' docker-compose.yml
                         sed -i '/dockerfile:/d' docker-compose.yml
                         sed -i '/context:/d' docker-compose.yml
                     """
-
-                    // Déploiement avec docker-compose
                     sh 'docker-compose down || true'
                     sh 'docker-compose up -d'
                 }
@@ -81,7 +72,6 @@ pipeline {
     post {
         always {
             script {
-                // Nettoyage
                 sh 'docker-compose down || true'
                 sh 'docker logout'
                 cleanWs()
