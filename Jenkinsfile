@@ -15,8 +15,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git credentialsId: 'jenkins-ssh',
-                    url: 'git@github.com:nouhamorj/SpringBootProject.git',
+                git credentialsId: 'jekins-up',
+                    url: 'https://github.com/nouhamorj/SpringBootProject.git',
                     branch: 'master'
             }
         }
