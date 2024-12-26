@@ -13,8 +13,11 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                deleteDir()
-                checkout scm
+                cleanWs()
+                sh """
+                    git clone https://github.com/nouhamorj/SpringBootProject.git .
+                    git checkout master
+                """
             }
         }
 
