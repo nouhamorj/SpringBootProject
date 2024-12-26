@@ -1,15 +1,15 @@
 pipeline {
     agent any
 
-    /*environment {
+    environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub')
         DOCKER_IMAGE = 'nouhamorj/springbootproject-master-app'
         /*DOCKER_TAG = "${BUILD_NUMBER}"
         LATEST_TAG = 'latest'
         // Configuration MySQL
         MYSQL_DATABASE = 'formation'
-        MYSQL_ROOT_PASSWORD = ''
-    }*/
+        MYSQL_ROOT_PASSWORD = ''*/
+    }
      stages {
             stage('Build') {
                 steps {
